@@ -12,6 +12,7 @@ Bu proje, Spring Boot, Gradle ve Java 17 kullanılarak geliştirilmiş, MinIO il
 - **Veritabanı**: PostgreSQL ile veri saklama
 - **API Dokümantasyonu**: OpenAPI (Swagger) ile API dokümantasyonu
 - **Test ve İstisna Yönetimi**: Kapsamlı birim testleri ve istisna yönetimi
+- **Virüs Tarama**: VirusTotal API entegrasyonu ile dosya güvenliği kontrolü
 
 ## Teknolojiler
 
@@ -24,6 +25,7 @@ Bu proje, Spring Boot, Gradle ve Java 17 kullanılarak geliştirilmiş, MinIO il
 - PostgreSQL
 - Flyway
 - Thumbnailator (Resim işleme)
+- VirusTotal API (Virüs tarama)
 - JUnit 5 & Mockito (Test)
 - Swagger/OpenAPI (API Dokümantasyonu)
 
@@ -50,6 +52,7 @@ minio-file-service/
 │   │   └── resources/
 │   │       ├── application.yml             # Ana konfigürasyon dosyası
 │   │       ├── application-postgres.yml    # PostgreSQL konfigürasyonu
+│   │       ├── application-virustotal.yml  # VirusTotal konfigürasyonu
 │   │       └── db/
 │   │           └── migration/              # Flyway veritabanı migrasyon dosyaları
 │   └── test/
@@ -72,6 +75,7 @@ minio-file-service/
 - MinIO Sunucusu
 - Keycloak Sunucusu
 - OpenFGA Sunucusu
+- VirusTotal API Anahtarı
 
 ### Veritabanı Kurulumu
 
@@ -89,6 +93,19 @@ CREATE DATABASE fileservice;
 - PostgreSQL bağlantı bilgileri
 - Keycloak bağlantı bilgileri
 - OpenFGA bağlantı bilgileri
+- VirusTotal API anahtarı
+
+### VirusTotal API Konfigürasyonu
+
+`application-virustotal.yml` dosyasında VirusTotal API ayarlarını yapılandırın:
+
+```yaml
+virustotal:
+  api-key: your-virustotal-api-key
+  api-url: https://www.virustotal.com/api/v3
+  enabled: true
+  scan-timeout: 60000  # 60 seconds timeout for scan operations
+```
 
 ### Derleme
 
@@ -155,6 +172,29 @@ http://localhost:8081/api/api-docs
 - `GET /api/shares/access/{token}`: Paylaşım linki ile dosya meta verilerine erişme
 - `GET /api/shares/access/{token}/content`: Paylaşım linki ile dosya içeriğini indirme
 - `GET /api/shares/validate/{token}`: Paylaşım linkinin geçerliliğini kontrol etme
+
+### Virüs Tarama İşlemleri
+
+- `GET /api/virus-scan/files/{fileId}`: Dosya için virüs tarama sonucunu getirme
+
+## Virüs Tarama Özelliği
+
+Bu mikroservis, VirusTotal API entegrasyonu ile dosya güvenliği kontrolü sağlar. Dosya yükleme işlemi sırasında, dosya önce VirusTotal'a gönderilir ve tarama sonucu alınır. Eğer dosya güvenli ise (virüs içermiyorsa) yükleme işlemi devam eder. Eğer dosya virüs içeriyorsa, yükleme işlemi reddedilir ve kullanıcıya uygun bir hata mesajı gösterilir.
+
+Virüs tarama sonuçları veritabanında saklanır ve daha sonra sorgulanabilir. Bu sayede, daha önce taranmış dosyaların güvenlik durumu hakkında bilgi alınabilir.
+
+### Virüs Tarama Sonuçları
+
+Virüs tarama sonuçları aşağıdaki bilgileri içerir:
+
+- `scanned`: Dosyanın taranıp taranmadığı
+- `clean`: Dosyanın temiz olup olmadığı (virüs içermediği)
+- `positives`: Kaç antivirüs motorunun virüs tespit ettiği
+- `total`: Toplam kaç antivirüs motorunun dosyayı taradığı
+- `scanId`: VirusTotal tarama kimliği
+- `resource`: Taranan dosyanın kaynak kimliği
+- `permalink`: VirusTotal'da tarama sonucuna doğrudan erişim linki
+- `message`: Tarama sonucu ile ilgili mesaj
 
 ## Güvenlik
 
