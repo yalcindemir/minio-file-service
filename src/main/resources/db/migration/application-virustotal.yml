@@ -1,0 +1,5 @@
+virustotal:
+  api-key: your-virustotal-api-key
+  api-url: https://www.virustotal.com/api/v3
+  enabled: true
+  scan-timeout: 60000  # 60 seconds timeout for scan operations
